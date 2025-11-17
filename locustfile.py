@@ -1,8 +1,7 @@
 from locust import HttpUser, task
-# from generate_pokemons import get_random
 
-class Pokemon(HttpUser):    
+class Pokemon(HttpUser):  
+    BASE_URL = "http://node-api:4444"
     @task
-    def list(self):
-        # Endereço da API no docker
-        self.client.get("http://node-api:4444/pokemon")
+    def list(self):        
+        self.client.get(f"{self.BASE_URL}/pokemon")
