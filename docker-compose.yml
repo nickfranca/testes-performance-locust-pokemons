@@ -15,7 +15,7 @@ services:
       NODE_ENV: development
       SERVER_PORT: 4444
       DB_DATABASE: node_api
-      DB_CONNECTION_STRING: mysql://nodeapi_root:j5m966qp7jiypfda@node-api-mysql:3306
+      DB_CONNECTION_STRING: mysql://nodeapi_root:j5m966qp7jiypfda@node-api-mysql:3306/node_api
     networks:
       - node-api-connect
 
@@ -38,5 +38,4 @@ services:
 
 networks:
   node-api-connect:
-    driver: bridge
     name: node-api-connect
