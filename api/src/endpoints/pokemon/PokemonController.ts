@@ -2,6 +2,20 @@ import { Request, Response } from 'express';
 import { PokemonRepository } from './Pokemon.repository';
 import { Pokemon } from './Pokemon.entity';
 
+type PokemonListPayload = {
+  items: Pick<Pokemon, 'id' | 'name' | 'type'>[];
+  total: number;
+  limit: number;
+  offset: number;
+};
+type PokemonListCacheValue = { payload: PokemonListPayload; expiresAt: number };
+
+const LIST_CACHE_TTL_MS = 10_000;
+const pokemonListCache = new Map<string, PokemonListCacheValue>();
+
+const buildListCacheKey = (limit: number, offset: number) => `${limit}:${offset}`;
+const clearPokemonListCache = () => pokemonListCache.clear();
+
 export class PokemonController {
   /**
    * @swagger
@@ -52,6 +66,7 @@ export class PokemonController {
     const createdPokemon = await new PokemonRepository().insert(pokemon);
 
     if (createdPokemon) {
+      clearPokemonListCache();
       res.status(201).json({ data: pokemon });
     } else {
       res.status(500).json({ data: 'Erro ao criar Pokémon.' });
@@ -82,14 +97,27 @@ export class PokemonController {
    *          description: Erro interno do servidor
    */
   async list(req: Request, res: Response) {
-    const [items, total] = await new PokemonRepository().findAndCount();
+    const limit = Math.min(Number(req.query.limit) || 50, 200);
+    const offset = Math.max(Number(req.query.offset) || 0, 0);
+    const cacheKey = buildListCacheKey(limit, offset);
+    const now = Date.now();
+    const cached = pokemonListCache.get(cacheKey);
 
-    const pokemons = {
-      items: items,
-      total: total
-    };
+    if (cached && cached.expiresAt > now) {
+      return res.status(200).json({ data: cached.payload });
+    }
 
-    return res.status(200).send({ data: pokemons });
+    const repository = new PokemonRepository();
+    const [items, total] = await repository.findAndCount({
+      take: limit,
+      skip: offset,
+      select: ['id', 'name', 'type']
+    });
+
+    const payload = { items, total, limit, offset };
+    pokemonListCache.set(cacheKey, { payload, expiresAt: now + LIST_CACHE_TTL_MS });
+
+    return res.status(200).json({ data: payload });
   }
 
   /**
@@ -186,6 +214,7 @@ export class PokemonController {
    */
   async delete(req: Request, res: Response) {
     await new PokemonRepository().clear();
+    clearPokemonListCache();
     return res.status(200).send({ data: 'Pokemons excluídos com sucesso!' });
   }
 }

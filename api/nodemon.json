@@ -5,5 +5,5 @@
     "ext": "ts",
     "ignore": ["*.test.ts"],
     "delay": "3",
-    "exec": "npm run lint && ts-node --transpile-only ./src/app.ts"
+    "exec": "NODE_ENV=production ts-node --transpile-only ./src/app.ts"
 }

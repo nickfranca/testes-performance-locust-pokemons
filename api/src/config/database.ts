@@ -6,6 +6,6 @@ export const MysqlDataSource = new DataSource({
   database: process.env.DB_DATABASE,
   url: process.env.DB_CONNECTION_STRING,
   entities: ['src/endpoints/**/*.entity.ts', 'src/endpoints/**/*.entity.js'],
-  logging: true,
+  logging: false,
   synchronize: true
 });
